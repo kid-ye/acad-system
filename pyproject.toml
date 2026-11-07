@@ -1,0 +1,12 @@
+# Python tooling config. Style follows the Google Python Style Guide:
+#   https://google.github.io/styleguide/pyguide.html
+# Linting uses ./pylintrc (Google's published rcfile). Formatting uses pyink,
+# Google's fork of Black that matches the guide.
+
+[tool.pyink]
+line-length = 80
+
+[tool.pylint.MASTER]
+# pylint reads ./pylintrc automatically; this block is a pointer for tools that
+# look in pyproject.toml instead.
+rcfile = "pylintrc"
