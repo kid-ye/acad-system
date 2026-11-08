@@ -3,5 +3,10 @@
 # parity-check it against sentence-transformers (scripts/verify_onnx.py). Also
 # enables the EMB_BACKEND=st fallback locally.
 #   pip install -r requirements-export.txt
-optimum[onnxruntime]>=1.17.0
-sentence-transformers>=3.0.0
+#
+# Pinned to a known-compatible set. With loose bounds, pip resolved an old
+# optimum against the latest transformers, which removed `is_tf_available`
+# and broke the ONNX export in the Docker build.
+optimum[onnxruntime]==2.1.0
+transformers==4.57.6
+sentence-transformers==5.7.0
