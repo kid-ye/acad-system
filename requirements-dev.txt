@@ -1,2 +1,8 @@
-# Test deps. Run: pip install -r requirements-dev.txt && pytest
+# Dev-only tools. Install with: pip install -r requirements-dev.txt
+
+# Google-style linting/formatting (see STYLE.md)
+pylint>=3.0
+pyink>=24.3.0
+
+# Tests: run `pytest`
 pytest>=8.0
