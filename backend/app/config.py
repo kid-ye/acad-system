@@ -35,6 +35,15 @@ EMB_MODEL = "BAAI/bge-small-en-v1.5"
 # bge-v1.5 is asymmetric: the query (not the corpus) gets this instruction
 QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 
+# Query encoder backend. The corpus embeddings.npy was built with the
+# sentence-transformers bge model above; the ONNX export of that same model
+# reproduces its query vectors (verified by scripts/export_onnx.py) but loads
+# in seconds instead of minutes and drops the torch dependency. "onnx" is the
+# default; set EMB_BACKEND=st to fall back to sentence-transformers.
+ONNX_DIR = DERIVED / "bge-onnx"            # model.onnx + tokenizer.json live here
+EMB_BACKEND = (os.getenv("EMB_BACKEND") or "onnx").lower()
+EMB_MAX_TOKENS = 512                        # bge context window
+
 CORS_ORIGINS = (os.getenv("CORS_ORIGINS") or "*").split(",")
 DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 100
