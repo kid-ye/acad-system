@@ -17,7 +17,11 @@ python-dotenv>=1.0.0
 fastapi>=0.104.0
 uvicorn>=0.24.0
 
-# Semantic search + grounded chat
+# Semantic search + grounded chat.
+# Query embedding runs on ONNX runtime (no torch) — far faster cold start and a
+# much smaller image. Export the model with scripts/export_onnx.py (see
+# requirements-export.txt). openai is the client for the Groq chat endpoint.
 numpy>=1.26.0
-sentence-transformers>=3.0.0
+onnxruntime>=1.17.0
+tokenizers>=0.15.0
 openai>=1.40.0

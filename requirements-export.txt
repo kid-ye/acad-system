@@ -1,0 +1,7 @@
+# Offline / dev only — not installed in the runtime image.
+# Needed to export the bge model to ONNX (scripts/export_onnx.py) and to
+# parity-check it against sentence-transformers (scripts/verify_onnx.py). Also
+# enables the EMB_BACKEND=st fallback locally.
+#   pip install -r requirements-export.txt
+optimum[onnxruntime]>=1.17.0
+sentence-transformers>=3.0.0

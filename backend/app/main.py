@@ -1,28 +1,46 @@
 """BMSCE Question Bank API — FastAPI app assembly."""
 
 import threading
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from . import semantic
 from .config import CORS_ORIGINS
 from .db import connection
 from .routers import search, meta, questions, files, chat, papers
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Warm the embedding matrix and query encoder off the request path. Both are
+    # lazy, so without this the first semantic search pays the model load. A
+    # daemon thread keeps startup instant and keyword search usable meanwhile.
+    threading.Thread(target=semantic.warm, daemon=True,
+                     name="semantic-warm").start()
+    yield
+
+
 app = FastAPI(
     title="BMSCE Question Bank API",
     version="2.0",
     description="Keyword + semantic search over BMSCE exam questions.",
+    lifespan=lifespan,
 )
 
+# No cookies or credentialed requests are used, so keep credentials off; a
+# wildcard origin with credentials is rejected by browsers anyway.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Compress responses over ~1KB (search result payloads especially).
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.include_router(search.router)
 app.include_router(meta.router)
@@ -30,18 +48,6 @@ app.include_router(questions.router)
 app.include_router(files.router)
 app.include_router(chat.router)
 app.include_router(papers.router)
-
-
-@app.on_event("startup")
-def _warm_semantic():
-    """Load the embedding matrix and query model off the request path.
-
-    Both are lazy, so without this the first semantic search (or chat message)
-    pays ~4 minutes of model load. Warming in a daemon thread keeps startup
-    instant and keyword search usable throughout.
-    """
-    threading.Thread(target=semantic.warm, daemon=True,
-                     name="semantic-warm").start()
 
 
 @app.get("/api/health")

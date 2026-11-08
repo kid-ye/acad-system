@@ -47,4 +47,10 @@ def figure(sha: str, filename: str):
     img = FIGURES_DIR / sha / filename
     if not _safe_under(FIGURES_DIR, img) or not img.is_file():
         raise HTTPException(404, "figure not found")
-    return FileResponse(img)
+    # Figures are content-addressed by sha, so the bytes at a URL never change.
+    # A long immutable cache lets Cloudflare and the browser serve repeats
+    # without touching the origin.
+    return FileResponse(
+        img,
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
