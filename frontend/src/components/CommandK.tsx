@@ -74,7 +74,7 @@ export default function CommandK({
         value={query}
         onValueChange={setQuery}
       />
-      <CommandList>
+      <CommandList className="h-[300px]">
         <CommandEmpty>
           {query.trim().length < 2
             ? "Type to search courses…"
