@@ -1,0 +1,2 @@
+# Test deps. Run: pip install -r requirements-dev.txt && pytest
+pytest>=8.0

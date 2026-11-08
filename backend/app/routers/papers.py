@@ -115,25 +115,35 @@ def zip_papers(
     tmp = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
     tmp.close()
     written = 0
-    with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_STORED) as z:
-        for r in rows:
-            name = _name(r)
-            if PDF_BASE_URL:
-                url = f"{PDF_BASE_URL}/pdfs-{r['sha'][0]}/{r['sha']}.pdf"
-                resp = requests.get(url, timeout=30, allow_redirects=True)
-                if resp.status_code != 200:
-                    continue  # skip missing files rather than failing whole zip
-                data = resp.content
-                written += len(data)
-                if written > MAX_ZIP_BYTES:
-                    os.unlink(tmp.name)
-                    raise HTTPException(413, f"exceeded "
-                        f"{MAX_ZIP_BYTES // 1024 // 1024} MB; select fewer papers")
-                z.writestr(name, data)
-            else:
-                pdf = _pdf_path(r["original_paths"])
-                if pdf:
-                    z.write(pdf, name)
+    # Any failure here (a network error, or the 413 below) must delete the temp
+    # file; only the success path hands it to FileResponse's cleanup task.
+    try:
+        with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_STORED) as z:
+            for r in rows:
+                name = _name(r)
+                if PDF_BASE_URL:
+                    url = f"{PDF_BASE_URL}/pdfs-{r['sha'][0]}/{r['sha']}.pdf"
+                    # stream the PDF straight into the zip instead of buffering
+                    # the whole file in memory
+                    with requests.get(url, timeout=30, allow_redirects=True,
+                                      stream=True) as resp:
+                        if resp.status_code != 200:
+                            continue  # skip missing files, don't fail the zip
+                        with z.open(name, "w") as dst:
+                            for chunk in resp.iter_content(64 * 1024):
+                                written += len(chunk)
+                                if written > MAX_ZIP_BYTES:
+                                    raise HTTPException(413, "exceeded "
+                                        f"{MAX_ZIP_BYTES // 1024 // 1024} MB; "
+                                        "select fewer papers")
+                                dst.write(chunk)
+                else:
+                    pdf = _pdf_path(r["original_paths"])
+                    if pdf:
+                        z.write(pdf, name)
+    except BaseException:
+        os.unlink(tmp.name)
+        raise
 
     label = (course_code[0] if len(course_code) == 1 else f"{len(course_code)}-courses")
     return FileResponse(
